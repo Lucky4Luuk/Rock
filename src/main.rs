@@ -18,8 +18,63 @@ use imgui::im_str;
 pub mod lua_api;
 pub mod graphics;
 
-lazy_static! {
-    static ref pipeline_state: Mutex<PipelineState> = Mutex::new(PipelineState::default());
+use lua_api::LuaApi;
+use graphics::ShaderProgram;
+
+static mut ROCK: Option<Rock> = None;
+
+pub struct Rock {
+    pub pipeline_state: PipelineState,
+    pub surface: GL33Surface,
+    pub lua: LuaApi,
+    pub imgui: imgui::Context,
+    pub imgui_sdl2: imgui_sdl2::ImguiSdl2,
+    pub renderer: imgui_opengl_renderer::Renderer,
+
+    //Runtime variables
+    pub default_program: ShaderProgram,
+    pub cur_program: ShaderProgram,
+}
+
+impl Rock {
+    pub fn new() -> Self {
+        let mut lua = lua_api::init_lua();
+        lua_api::load_code(&lua, "print(\"hello from lua!\")").exec().expect("Failed to run lua code!");
+
+        lua_api::load_code(&lua, include_str!("test.lua")).exec().expect("Failed to load lua code!");
+
+        //TODO: Error handling
+        let mut surface = GL33Surface::build_with(|video| {
+            let gl_attr = video.gl_attr();
+            let mut builder = video.window("Rock", 1280, 720);
+            builder
+        }).expect("Failed to open window!");
+        let video = surface.sdl().video().expect("Failed to acquire video system!");
+        let swap_interval = sdl2::video::SwapInterval::Immediate;
+        video.gl_set_swap_interval(swap_interval).expect("Failed to set window swap interval!");
+
+        //IMGUI initialization
+        let mut imgui = imgui::Context::create();
+        imgui.set_ini_filename(None);
+        let mut imgui_sdl2 = imgui_sdl2::ImguiSdl2::new(&mut imgui, &surface.window());
+        let renderer = imgui_opengl_renderer::Renderer::new(&mut imgui, |s| video.gl_get_proc_address(s) as _);
+
+        //Default shader program. 2nd program is because program doesn't implement `Clone`
+        let program = unsafe { graphics::get_default_program(&mut surface) };
+        let program2 = unsafe { graphics::get_default_program(&mut surface) };
+
+        Rock {
+            pipeline_state: PipelineState::default(),
+            surface: surface,
+            lua: lua,
+            imgui: imgui,
+            imgui_sdl2: imgui_sdl2,
+            renderer: renderer,
+
+            default_program: program,
+            cur_program: program2,
+        }
+    }
 }
 
 fn main() {
@@ -29,45 +84,28 @@ fn main() {
 
     debug!("Hello, world!");
 
-    let lua = lua_api::init_lua();
-    lua_api::load_code(&lua, "print(\"hello from lua!\")").exec().expect("Failed to run lua code!");
-
-    lua_api::load_code(&lua, include_str!("test.lua")).exec().expect("Failed to load lua code!");
-    lua_api::call_rock_func(&lua, "load", 0).expect("Failed to call `rock.load`");
-
-    //TODO: Error handling
-    let mut surface = GL33Surface::build_with(|video| {
-        let gl_attr = video.gl_attr();
-        let mut builder = video.window("Rock", 1280, 720);
-        builder
-    }).expect("Failed to open window!");
-    let video = surface.sdl().video().expect("Failed to acquire video system!");
-    let swap_interval = sdl2::video::SwapInterval::Immediate;
-    video.gl_set_swap_interval(swap_interval).expect("Failed to set window swap interval!");
-
-    //IMGUI initialization
-    let mut imgui = imgui::Context::create();
-    imgui.set_ini_filename(None);
-    let mut imgui_sdl2 = imgui_sdl2::ImguiSdl2::new(&mut imgui, &surface.window());
-    let renderer = imgui_opengl_renderer::Renderer::new(&mut imgui, |s| video.gl_get_proc_address(s) as _);
+    unsafe {
+        ROCK = Some(Rock::new());
+    }
 
     let mut start_t = Instant::now();
     let mut deltatime = 0.0; //In seconds
     let bg_color = [0.25, 0.25, 0.25, 1.0];
 
-    {
-        let mut state = crate::pipeline_state.lock().expect("Unable to acquire lock!");
-        (*state).clear_color = bg_color;
-    }
+    // let triangle = unsafe { graphics::g2d::primitives::create_triangle(&mut ROCK.as_mut().unwrap().surface) };
 
-    //Temporary hardcoded program
-    let mut program = graphics::g2d::get_default_program(&mut surface);
+    unsafe { if let Some(ref mut rock) = ROCK { rock.pipeline_state = rock.pipeline_state.clone().set_clear_color(bg_color); } }
 
-    let mut event_pump = surface.sdl().event_pump().expect("Failed to create event pump!");
+    //Call program load
+    unsafe { lua_api::call_rock_func(&ROCK.as_ref().unwrap().lua, "load", 0).expect("Failed to call `rock.load`"); }
+
+    let mut event_pump = unsafe { ROCK.as_mut().unwrap().surface.sdl().event_pump().expect("Failed to create event pump!") };
     'running: loop {
         for event in event_pump.poll_iter() {
-            imgui_sdl2.handle_event(&mut imgui, &event);
-            if imgui_sdl2.ignore_event(&event) { continue; }
+            unsafe {
+                ROCK.as_mut().unwrap().imgui_sdl2.handle_event(&mut ROCK.as_mut().unwrap().imgui, &event);
+                if ROCK.as_mut().unwrap().imgui_sdl2.ignore_event(&event) { continue; }
+            }
 
             match event {
                 Event::Quit {..} |
@@ -79,11 +117,11 @@ fn main() {
         }
 
         //Call game update
-        lua_api::call_rock_func(&lua, "update", deltatime).expect("Failed to call `rock.update`");
+        unsafe { lua_api::call_rock_func(&ROCK.as_ref().unwrap().lua, "update", deltatime).expect("Failed to call `rock.update`"); }
 
         //Prepare IMGUI
-        imgui_sdl2.prepare_frame(imgui.io_mut(), &surface.window(), &event_pump.mouse_state());
-        let ui = imgui.frame();
+        unsafe { ROCK.as_mut().unwrap().imgui_sdl2.prepare_frame(ROCK.as_mut().unwrap().imgui.io_mut(), &ROCK.as_mut().unwrap().surface.window(), &event_pump.mouse_state()); }
+        let ui = unsafe { ROCK.as_mut().unwrap().imgui.frame() };
         let perf_window = imgui::Window::new(im_str!("Performance"))
                     .position([5.0, 5.0], imgui::Condition::Appearing)
                     .size([180.0, 80.0], imgui::Condition::Appearing)
@@ -101,38 +139,37 @@ fn main() {
             ui.text("Nothing here yet :)");
         });
 
-        //Call game draw
-        lua_api::call_rock_func(&lua, "draw", 0).expect("Failed to call `rock.draw`");
+        //Get back buffer
+        let back_buffer = unsafe { ROCK.as_mut().unwrap().surface.back_buffer().expect("Failed to get backbuffer!") };
 
-        //Render application
-        let back_buffer = surface.back_buffer().expect("Failed to get backbuffer!");
-
-        let render = surface.new_pipeline_gate().pipeline(
+        //Clear screen with correct color
+        let render = unsafe { ROCK.as_mut().unwrap().surface.new_pipeline_gate().pipeline(
             &back_buffer,
-            &pipeline_state.lock().unwrap(),
-            |_pipeline, mut shd_gate| {
-                shd_gate.shade(&mut program, |_, _, mut rdr_gate| {
-                    rdr_gate.render(&RenderState::default(), |mut tess_gate| {
-                        Ok(())
-                    })
-                })
-            },
-        ).assume();
+            &ROCK.as_mut().unwrap().pipeline_state,
+            |_, _| Ok(()),
+        ).assume() };
 
         if !render.is_ok() {
             error!("Renderer ran into unknown error!");
             break 'running;
         }
 
+        //Call game draw
+        unsafe { lua_api::call_rock_func(&ROCK.as_ref().unwrap().lua, "draw", 0).expect("Failed to call `rock.draw`"); }
+
         //Render IMGUI
-        imgui_sdl2.prepare_render(&ui, &surface.window());
-        renderer.render(ui);
+        unsafe {
+            ROCK.as_mut().unwrap().imgui_sdl2.prepare_render(&ui, &ROCK.as_mut().unwrap().surface.window());
+            ROCK.as_ref().unwrap().renderer.render(ui);
+        }
 
         deltatime = start_t.elapsed().as_secs_f32();
         start_t = Instant::now();
         // warn!("dt: {}", deltatime);
         // surface.window().set_title(&format!("fps: {:.2}", 1.0 / deltatime));
-        imgui.io_mut().delta_time = deltatime;
-        surface.window().gl_swap_window();
+        unsafe {
+            ROCK.as_mut().unwrap().imgui.io_mut().delta_time = deltatime;
+            ROCK.as_mut().unwrap().surface.window().gl_swap_window();
+        }
     }
 }

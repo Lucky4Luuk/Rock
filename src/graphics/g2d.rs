@@ -1,31 +1,30 @@
-use luminance_sdl2::GL33Surface;
-use luminance_gl::GL33;
+use luminance::tess::Mode;
 
-use luminance::{Semantics, Vertex};
-use luminance::context::GraphicsContext;
-use luminance::shader::Program;
+use super::{
+    VertexType,
+    VertexPosition,
+    VertexColor,
+    mesh::Mesh,
+};
 
-#[derive(Copy, Clone, Debug, PartialEq, Semantics)]
-pub enum VertexSemantics {
-    #[sem(name = "position", repr = "[f32; 2]", wrapper = "VertexPosition")]
-    Position,
-    #[sem(name = "color", repr = "[f32; 3]", wrapper = "VertexColor")]
-    Color,
-}
+pub const TRIANGLE: [VertexType; 3] = [
+    VertexType::new(
+        VertexPosition::new([-0.5, -0.5, 0.0]),
+        VertexColor::new([1.0, 0.0, 0.0]),
+    ),
+    VertexType::new(
+        VertexPosition::new([0.5, -0.5, 0.0]),
+        VertexColor::new([0.0, 1.0, 0.0]),
+    ),
+    VertexType::new(
+        VertexPosition::new([0.0, 0.5, 0.0]),
+        VertexColor::new([0.0, 0.0, 1.0])
+    ),
+];
 
-#[derive(Copy, Clone, Debug, PartialEq, Vertex)]
-#[vertex(sem = "VertexSemantics")]
-pub struct VertexType {
-    position: VertexPosition,
-    color: VertexColor,
-}
-
-const VS_STR: &str = include_str!("vs2d.glsl");
-const FS_STR: &str = include_str!("fs2d.glsl");
-
-pub fn get_default_program(surface: &mut GL33Surface) -> Program<GL33, VertexSemantics, (), ()> {
-    surface.new_shader_program::<VertexSemantics, (), ()>()
-           .from_strings(VS_STR, None, None, FS_STR)
-           .expect("Failed to compile shaders!")
-           .ignore_warnings()
+pub fn create_triangle(surface: &mut luminance_sdl2::GL33Surface) -> Mesh {
+    Mesh::new(surface, |builder| {
+        builder.set_vertices(&TRIANGLE[..])
+                .set_mode(Mode::Triangle)
+    })
 }
