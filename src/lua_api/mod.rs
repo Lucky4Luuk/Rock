@@ -3,6 +3,7 @@ use std::ops::{Deref, DerefMut};
 use mlua::{Chunk, Function, Table, Lua, prelude::ToLua, MetaMethod, Result, UserData, UserDataMethods, Variadic};
 
 pub mod lua_graphics;
+pub mod lua_math;
 
 pub struct LuaApi {
     lua: Lua,
@@ -23,22 +24,12 @@ impl DerefMut for LuaApi {
 
 /// Helper function that binds some custom functions
 pub fn init_lua() -> LuaApi {
-    let lua = {
-        let lua = Lua::new();
-        {
-            let globals = lua.globals();
-            let custom_print = lua.create_function(|_, list: Variadic<String>| {
-                lua_print(list.iter().collect());
-                Ok(())
-            }).expect("Failed to create `print` function!");
-            globals.set("print", custom_print).expect("Failed to overwrite `print` function!");
-        }
-        LuaApi {
-            lua: lua,
-        }
-    };
+    let lua = LuaApi {
+                lua: Lua::new(),
+            };
     load_main_table(&lua).expect("Failed to load `rock` table!");
-    lua_graphics::load_graphics_table(&lua).expect("Failed to load `main` table!");
+    lua_graphics::load_graphics_table(&lua).expect("Failed to load `rock.graphics` table!");
+    lua_math::load_math_table(&lua).expect("Failed to load `rock.math` table!");
     lua
 }
 

@@ -17,6 +17,7 @@ use imgui::im_str;
 
 pub mod lua_api;
 pub mod graphics;
+pub mod math;
 
 use lua_api::LuaApi;
 use graphics::ShaderProgram;
