@@ -7,6 +7,7 @@ pub mod lua_mesh;
 use super::LuaApi;
 
 use lua_mesh::{LuaMesh, mesh_constructor};
+use super::lua_math::{LuaTransform};
 
 ///Loads rock.graphics
 pub fn load_graphics_table(lua: &LuaApi) -> Result<()> {
@@ -22,8 +23,8 @@ pub fn load_graphics_table(lua: &LuaApi) -> Result<()> {
         Ok(mesh)
     })?;
     graphics_table.set("mesh", mesh_func)?;
-    let draw_func = lua.create_function(|_,(mesh)| {
-        draw(mesh);
+    let draw_func = lua.create_function(|_,(mesh, transform)| {
+        draw(mesh, transform);
         Ok(())
     })?;
     graphics_table.set("draw", draw_func)?;
@@ -44,7 +45,7 @@ fn clear(r: f32, g: f32, b: f32, a: f32) {
     }
 }
 
-fn draw(mesh: LuaMesh) {
+fn draw(mesh: LuaMesh, transform: LuaTransform) {
     use crate::ROCK;
     use luminance::render_state::RenderState;
 
@@ -54,7 +55,9 @@ fn draw(mesh: LuaMesh) {
         &back_buffer,
         &ROCK.as_mut().unwrap().pipeline_state,
         |_pipeline, mut shd_gate| {
-            shd_gate.shade(&mut ROCK.as_mut().unwrap().default_program, |_, _, mut rdr_gate| {
+            shd_gate.shade(&mut ROCK.as_mut().unwrap().default_program, |mut iface, uni, mut rdr_gate| {
+                iface.set(&uni.offset, transform.transform.get_matrix().to_cols_array_2d());
+
                 rdr_gate.render(&RenderState::default(), |mut tess_gate| {
                     tess_gate.render(mesh.tess())
                 })

@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use mlua::{UserData, MetaMethod, Result, UserDataMethods, Table};
 use glam::*;
 
@@ -12,11 +13,12 @@ pub fn load_math_table(lua: &LuaApi) -> Result<()> {
         Ok(vec3_constructor(x,y,z))
     })?;
     math_table.set("vec3", vec3_func)?;
-    let quat_euler_func = lua.create_function(|_,(yaw, pitch, roll)| {
-        Ok(quat_euler_constructor(yaw, pitch, roll))
+    let quat_euler_func = lua.create_function(|_,(yaw,pitch,roll)| {
+        let quat = quat_euler_constructor(yaw, pitch, roll);
+        Ok(quat)
     })?;
     math_table.set("quat_euler", quat_euler_func)?;
-    let transform_func = lua.create_function(|_,(pos, rot, scale)| {
+    let transform_func = lua.create_function(|_,(pos,rot,scale)| {
         Ok(transform_constructor(pos, rot, scale))
     })?;
     math_table.set("transform", transform_func)?;
@@ -27,9 +29,9 @@ pub fn load_math_table(lua: &LuaApi) -> Result<()> {
     Ok(())
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct LuaVec3 {
-    pub vec: Vec3,
+    pub vec: Arc<Vec3>,
 }
 
 impl UserData for LuaVec3 {
@@ -51,40 +53,40 @@ impl UserData for LuaVec3 {
         });
 
         methods.add_meta_function(MetaMethod::Add, |_, (a,b): (LuaVec3, LuaVec3)| {
-            Ok(LuaVec3 { vec: a.vec + b.vec })
+            Ok(LuaVec3 { vec: Arc::new(*a.vec + *b.vec) })
         });
 
         methods.add_meta_function(MetaMethod::Sub, |_, (a,b): (LuaVec3, LuaVec3)| {
-            Ok(LuaVec3 { vec: a.vec - b.vec })
+            Ok(LuaVec3 { vec: Arc::new(*a.vec - *b.vec) })
         });
 
         methods.add_meta_function(MetaMethod::Mul, |_, (a,b): (LuaVec3, LuaVec3)| {
-            Ok(LuaVec3 { vec: a.vec * b.vec })
+            Ok(LuaVec3 { vec: Arc::new(*a.vec * *b.vec) })
         });
 
         methods.add_meta_function(MetaMethod::Div, |_, (a,b): (LuaVec3, LuaVec3)| {
-            Ok(LuaVec3 { vec: a.vec / b.vec })
+            Ok(LuaVec3 { vec: Arc::new(*a.vec / *b.vec) })
         });
 
         methods.add_meta_function(MetaMethod::Pow, |_, (a,b): (LuaVec3, f32)| {
-            Ok(LuaVec3 { vec: a.vec.powf(b) })
+            Ok(LuaVec3 { vec: Arc::new(a.vec.powf(b)) })
         });
 
         methods.add_meta_function(MetaMethod::Unm, |_, a: LuaVec3| {
-            Ok(LuaVec3 { vec: -a.vec })
+            Ok(LuaVec3 { vec: Arc::new(-*a.vec) })
         });
     }
 }
 
 pub fn vec3_constructor(x: f32, y: f32, z: f32) -> LuaVec3 {
     LuaVec3 {
-        vec: Vec3::new(x,y,z)
+        vec: Arc::new(Vec3::new(x,y,z))
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct LuaQuat {
-    pub quat: Quat,
+    pub quat: Arc<Quat>,
 }
 
 impl UserData for LuaQuat {
@@ -93,6 +95,7 @@ impl UserData for LuaQuat {
             Ok(format!("Transform {{ quat: {} }}", obj.quat))
         });
 
+        /*
         methods.add_meta_function(MetaMethod::Eq, |_, (a,b): (LuaQuat, LuaQuat)| {
             Ok(a.quat == b.quat)
         });
@@ -124,18 +127,19 @@ impl UserData for LuaQuat {
         methods.add_meta_function(MetaMethod::Unm, |_, a: LuaQuat| {
             Ok(LuaQuat { quat: -a.quat })
         });
+        */
     }
 }
 
 pub fn quat_euler_constructor(yaw: f32, pitch: f32, roll: f32) -> LuaQuat {
     LuaQuat {
-        quat: Quat::from_rotation_ypr(yaw, pitch, roll)
+        quat: Arc::new(Quat::from_rotation_ypr(yaw, pitch, roll))
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct LuaTransform {
-    pub transform: Transform,
+    pub transform: Arc<Transform>,
 }
 
 impl UserData for LuaTransform {
@@ -150,8 +154,8 @@ impl UserData for LuaTransform {
 }
 
 pub fn transform_constructor(pos: LuaVec3, rot: LuaQuat, scale: LuaVec3) -> LuaTransform {
-    let transform = Transform::new(pos.vec, rot.quat, scale.vec);
+    let transform = Transform::new(*pos.vec, *rot.quat, *scale.vec);
     LuaTransform {
-        transform: transform
+        transform: Arc::new(transform)
     }
 }

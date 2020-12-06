@@ -1,3 +1,3 @@
 # Notes
-## Shader programs
-Shader programs should probably have an `enum` wrapping them, so they are more easily usable as a generic program type, even though they have type specifiers for `VertexSemantics` and such.
+## Framebuffers
+There should probably be some wrapper type, like Love2D's `canvas` type, to easily allow for switching to `framebuffers` to render to. This shouldn't be very hard with `luminance`, as it already provides a nice interface for `framebuffers`.
