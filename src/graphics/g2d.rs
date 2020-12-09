@@ -9,15 +9,15 @@ use super::{
 
 pub const TRIANGLE: [VertexType; 3] = [
     VertexType::new(
-        VertexPosition::new([-0.5, -0.5, 0.0]),
+        VertexPosition::new([-1.0, -1.0, 0.0]),
         VertexColor::new([1.0, 0.0, 0.0]),
     ),
     VertexType::new(
-        VertexPosition::new([0.5, -0.5, 0.0]),
+        VertexPosition::new([1.0, -1.0, 0.0]),
         VertexColor::new([0.0, 1.0, 0.0]),
     ),
     VertexType::new(
-        VertexPosition::new([0.0, 0.5, 0.0]),
+        VertexPosition::new([0.0, 1.0, 0.0]),
         VertexColor::new([0.0, 0.0, 1.0])
     ),
 ];

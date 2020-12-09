@@ -5,7 +5,8 @@ use mlua::{Chunk, Function, Table, Lua, prelude::ToLua, MetaMethod, Result, User
 
 use crate::graphics::Mesh;
 use crate::graphics::g2d::TRIANGLE;
-use crate::graphics::VertexType;
+use crate::graphics::{VertexType, VertexPosition, VertexColor};
+use crate::lua_api::lua_math::LuaVec3;
 
 /// Wrapper around the many types of meshes, to provide a single
 /// interface for Lua.
@@ -15,9 +16,9 @@ pub struct LuaMesh {
 }
 
 impl LuaMesh {
-    pub fn new_2d() -> Self {
+    pub fn new_2d(vertices: &[VertexType]) -> Self {
         let mesh = unsafe { Mesh::new(&mut crate::ROCK.as_mut().unwrap().surface, |builder| {
-            builder.set_vertices(&TRIANGLE[..])
+            builder.set_vertices(vertices)
                 .set_mode(Mode::Triangle)
         }) };
         Self {
@@ -38,6 +39,17 @@ impl UserData for LuaMesh {
     }
 }
 
-pub fn mesh_constructor() -> LuaMesh {
-    LuaMesh::new_2d()
+pub fn mesh_constructor(lua_verts: Table) -> Result<LuaMesh> {
+    let mut vertices = Vec::new();
+    for i in 0..lua_verts.len()? {
+        let lua_vert: Table = lua_verts.get(i + 1)?;
+        let pos: LuaVec3 = lua_vert.get(1)?;
+        let rgb: LuaVec3 = lua_vert.get(2)?;
+        let vert = VertexType::new(
+            VertexPosition::new((*pos.vec).into()),
+            VertexColor::new((*rgb.vec).into()),
+        );
+        vertices.push(vert);
+    }
+    Ok(LuaMesh::new_2d(&vertices))
 }

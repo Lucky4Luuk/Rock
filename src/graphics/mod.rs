@@ -4,6 +4,9 @@ pub mod g3d;
 mod mesh;
 pub use mesh::Mesh;
 
+mod camera;
+pub use camera::Camera;
+
 use luminance_sdl2::GL33Surface;
 use luminance_gl::GL33;
 
@@ -22,18 +25,18 @@ pub enum VertexSemantics {
 #[derive(Copy, Clone, Debug, PartialEq, Vertex)]
 #[vertex(sem = "VertexSemantics")]
 pub struct VertexType {
-    position: VertexPosition,
-    color: VertexColor,
+    pub position: VertexPosition,
+    pub color: VertexColor,
 }
 
 #[derive(Debug, UniformInterface)]
 pub struct ShaderInterface {
-    // #[uniform(unbound)]
-    // projection: Uniform<[[f32; 4]; 4]>,
-    // #[uniform(unbound)]
-    // view: Uniform<[[f32; 4]; 4]>,
     #[uniform(unbound)]
     pub offset: Uniform<[[f32; 4]; 4]>,
+    #[uniform(unbound)]
+    pub projection: Uniform<[[f32; 4]; 4]>,
+    #[uniform(unbound)]
+    pub view: Uniform<[[f32; 4]; 4]>,
 }
 
 const VS_STR: &str = include_str!("vs2d.glsl");

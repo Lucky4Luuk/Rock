@@ -33,12 +33,14 @@ pub fn init_lua() -> LuaApi {
     lua
 }
 
+/// Helper function that calls `lua.load(code)`
+/// Kind of useless at the moment
 pub fn load_code<'a>(lua: &'a LuaApi, code: &'a str) -> Chunk<'a, 'a> {
     lua.load(code)
 }
 
 pub fn call_rock_func<'a, A: ToLua<'a>>(lua: &'a LuaApi, func_name: &'a str, args: A) -> Result<()> {
-    {
+    { //Block to scope globals
         let globals = lua.globals();
         let rock_table: Table = globals.get("rock")?;
         let func: Function = rock_table.get(func_name)?;
@@ -66,6 +68,7 @@ fn load_main_table<'a>(lua: &'a LuaApi) -> Result<()> {
     Ok(())
 }
 
+//TODO: This stuff is useless, as it severely limits lua's `print` function
 fn lua_print(data: Vec<&String>) {
     let mut output = String::new();
     for s in data {

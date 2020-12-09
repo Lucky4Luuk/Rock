@@ -15,12 +15,15 @@ use luminance::render_state::RenderState;
 
 use imgui::im_str;
 
+use glam::*;
+
 pub mod lua_api;
 pub mod graphics;
 pub mod math;
 
 use lua_api::LuaApi;
-use graphics::ShaderProgram;
+use graphics::{ShaderProgram, Camera};
+use math::Transform;
 
 static mut ROCK: Option<Rock> = None;
 
@@ -35,6 +38,7 @@ pub struct Rock {
     //Runtime variables
     pub default_program: ShaderProgram,
     pub cur_program: ShaderProgram,
+    pub camera: Camera,
 }
 
 impl Rock {
@@ -64,6 +68,13 @@ impl Rock {
         let program = unsafe { graphics::get_default_program(&mut surface) };
         let program2 = unsafe { graphics::get_default_program(&mut surface) };
 
+        let cam_pos = Vec3::new(0.0,0.0,-2.0);
+        let cam_rot = Quat::from_rotation_ypr(0.0, 0.0, 0.0);
+        let cam_scale = Vec3::new(1.0, 1.0, 1.0); //Useless but needed
+        let cam_transform = Transform::new(cam_pos, cam_rot, cam_scale);
+
+        let camera = Camera::new(false, cam_transform, 60.0);
+
         Rock {
             pipeline_state: PipelineState::default(),
             surface: surface,
@@ -74,7 +85,14 @@ impl Rock {
 
             default_program: program,
             cur_program: program2,
+            camera: camera,
         }
+    }
+
+    pub fn get_render_state(&self) -> PipelineState {
+        self.pipeline_state.clone()
+            .enable_clear_color(false)
+            .enable_clear_depth(false)
     }
 }
 
