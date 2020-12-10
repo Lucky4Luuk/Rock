@@ -5,7 +5,7 @@ mod mesh;
 pub use mesh::Mesh;
 
 mod camera;
-pub use camera::Camera;
+pub use camera::{Camera, CameraMode};
 
 use luminance_sdl2::GL33Surface;
 use luminance_gl::GL33;

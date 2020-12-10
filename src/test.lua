@@ -24,7 +24,7 @@ end
 function rock.update(dt)
     t = t + dt
     local tmp = rock.math.quat_euler(0,0,t)
-    -- transform:setRotation(tmp)
+    -- transform[1]:setRotation(tmp)
 end
 
 function rock.draw()

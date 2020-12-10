@@ -22,7 +22,7 @@ pub mod graphics;
 pub mod math;
 
 use lua_api::LuaApi;
-use graphics::{ShaderProgram, Camera};
+use graphics::{ShaderProgram, Camera, CameraMode};
 use math::Transform;
 
 static mut ROCK: Option<Rock> = None;
@@ -43,7 +43,7 @@ pub struct Rock {
 
 impl Rock {
     pub fn new() -> Self {
-        let mut lua = lua_api::init_lua();
+        let lua = lua_api::init_lua();
         lua_api::load_code(&lua, "print(\"hello from lua!\")").exec().expect("Failed to run lua code!");
 
         lua_api::load_code(&lua, include_str!("test.lua")).exec().expect("Failed to load lua code!");
@@ -61,19 +61,19 @@ impl Rock {
         //IMGUI initialization
         let mut imgui = imgui::Context::create();
         imgui.set_ini_filename(None);
-        let mut imgui_sdl2 = imgui_sdl2::ImguiSdl2::new(&mut imgui, &surface.window());
+        let imgui_sdl2 = imgui_sdl2::ImguiSdl2::new(&mut imgui, &surface.window());
         let renderer = imgui_opengl_renderer::Renderer::new(&mut imgui, |s| video.gl_get_proc_address(s) as _);
 
         //Default shader program. 2nd program is because program doesn't implement `Clone`
-        let program = unsafe { graphics::get_default_program(&mut surface) };
-        let program2 = unsafe { graphics::get_default_program(&mut surface) };
+        let program = graphics::get_default_program(&mut surface);
+        let program2 = graphics::get_default_program(&mut surface);
 
         let cam_pos = Vec3::new(0.0,0.0,-2.0);
         let cam_rot = Quat::from_rotation_ypr(0.0, 0.0, 0.0);
         let cam_scale = Vec3::new(1.0, 1.0, 1.0); //Useless but needed
         let cam_transform = Transform::new(cam_pos, cam_rot, cam_scale);
 
-        let camera = Camera::new(false, cam_transform, 60.0);
+        let camera = Camera::new(CameraMode::Perspective, cam_transform, 60.0 / 180.0 * 3.14);
 
         Rock {
             pipeline_state: PipelineState::default(),

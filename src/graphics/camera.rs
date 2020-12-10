@@ -2,9 +2,17 @@ use glam::*;
 
 use crate::math::Transform;
 
+#[non_exhaustive]
+#[derive(PartialEq)]
+pub enum CameraMode {
+    Orthographic,
+    Perspective,
+    HeadMountedDisplay,
+}
+
 /// Camera struct, both for orthographic and perspective
 pub struct Camera {
-    pub ortho: bool,
+    pub mode: CameraMode,
     pub transform: Transform,
     pub fov: f32, //In radians
     pub near: f32,
@@ -12,12 +20,12 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(ortho: bool, transform: Transform, fov: f32) -> Self {
-        if fov >= 180.0 || fov <= 0.0 {
-            panic!("FOV cannot be 180 (or greater) or 0 (or less)!");
+    pub fn new(mode: CameraMode, transform: Transform, fov: f32) -> Self {
+        if mode == CameraMode::Perspective && (fov >= 3.14 || fov <= 0.0) {
+            panic!("FOV cannot be 3.14 radians (or greater) or 0 radians (or less)!");
         }
         Self {
-            ortho: ortho,
+            mode: mode,
             transform: transform,
             fov: fov,
 
@@ -33,22 +41,23 @@ impl Camera {
             (size.0 as f32, size.1 as f32)
         };
         let aspect_ratio = width / height;
-        if !self.ortho {
-            Mat4::perspective_rh_gl(
+
+        match self.mode {
+            CameraMode::Perspective => Mat4::perspective_rh_gl(
                 self.fov,
                 aspect_ratio,
                 self.near,
                 self.far,
-            )
-        } else {
-            Mat4::orthographic_rh_gl(
+            ),
+            CameraMode::Orthographic => Mat4::orthographic_rh_gl(
                 -aspect_ratio,
                 aspect_ratio,
                 -1.0,
                  1.0,
                 -1.0, //Near
                  1.0, //Far
-            )
+            ),
+            _ => unimplemented!()
         }
     }
 
