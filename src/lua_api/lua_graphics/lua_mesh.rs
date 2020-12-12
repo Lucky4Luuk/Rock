@@ -5,8 +5,8 @@ use mlua::{Chunk, Function, Table, Lua, prelude::ToLua, MetaMethod, Result, User
 
 use crate::graphics::Mesh;
 use crate::graphics::g2d::TRIANGLE;
-use crate::graphics::{VertexType, VertexPosition, VertexColor};
-use crate::lua_api::lua_math::LuaVec3;
+use crate::graphics::{VertexType, VertexPosition, VertexColor, VertexUV, VertexNormal};
+use crate::lua_api::lua_math::{LuaVec2, LuaVec3};
 
 /// Wrapper around the many types of meshes, to provide a single
 /// interface for Lua.
@@ -51,10 +51,14 @@ pub fn mesh_constructor(lua_verts: Table) -> Result<LuaMesh> {
     for i in 0..lua_verts.len()? {
         let lua_vert: Table = lua_verts.get(i + 1)?;
         let pos: LuaVec3 = lua_vert.get(1)?;
-        let rgb: LuaVec3 = lua_vert.get(2)?;
+        let rgb: LuaVec3 = lua_vert.get(3)?;
+        let uv: LuaVec2 = lua_vert.get(4)?;
+        let normal: LuaVec3 = lua_vert.get(2)?;
         let vert = VertexType::new(
             VertexPosition::new((*pos.vec).into()),
             VertexColor::new((*rgb.vec).into()),
+            VertexUV::new((*uv.vec).into()),
+            VertexNormal::new((*normal.vec).into()),
         );
         vertices.push(vert);
     }

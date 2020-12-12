@@ -24,6 +24,10 @@ pub enum VertexSemantics {
     Position,
     #[sem(name = "color", repr = "[f32; 3]", wrapper = "VertexColor")]
     Color,
+    #[sem(name = "uv", repr = "[f32; 2]", wrapper = "VertexUV")]
+    UV,
+    #[sem(name = "normal", repr = "[f32; 3]", wrapper = "VertexNormal")]
+    Normal,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Vertex)]
@@ -31,6 +35,8 @@ pub enum VertexSemantics {
 pub struct VertexType {
     pub position: VertexPosition,
     pub color: VertexColor,
+    pub uv: VertexUV,
+    pub normal: VertexNormal,
 }
 
 #[derive(Debug, UniformInterface)]
@@ -41,6 +47,8 @@ pub struct ShaderInterface {
     pub projection: Uniform<[[f32; 4]; 4]>,
     #[uniform(unbound)]
     pub view: Uniform<[[f32; 4]; 4]>,
+    #[uniform(unbound)]
+    pub normal_matrix: Uniform<[[f32; 4]; 4]>,
 }
 
 const VS_STR: &str = include_str!("vs2d.glsl");
@@ -54,10 +62,35 @@ pub fn get_default_program(surface: &mut GL33Surface) -> ShaderProgram {
            .ignore_warnings()
 }
 
-//TODO: Make this work for all different formats
-//      that can be loaded from just a byte array.
-/// Incredibly ugly mesh import, only for GLTF format.
-pub fn meshes_from_bytes(bytes: Vec<u8>) -> Vec<(Mesh, Transform)> {
+//TODO: Separate GLB and GLTF because there might be differences
+//      between the two when it comes to loading.
+#[non_exhaustive]
+pub enum MeshByteFormat {
+    GLB,
+    GLTF,
+    Other,
+}
+
+impl MeshByteFormat {
+    pub fn from_string(format: String) -> Self {
+        match format.to_lowercase().as_str() {
+            "gltf" => Self::GLTF,
+            "glb" => Self::GLB,
+
+            _ => Self::Other,
+        }
+    }
+}
+
+pub fn meshes_from_bytes(bytes: Vec<u8>, format: MeshByteFormat) -> Vec<(Mesh, Transform)> {
+    match format {
+        GLB => gltf_meshes_from_bytes(bytes),
+        _ => unimplemented!(),
+    }
+}
+
+/// Incredibly ugly gltf mesh import
+fn gltf_meshes_from_bytes(bytes: Vec<u8>) -> Vec<(Mesh, Transform)> {
     let (document, buffers, images) = gltf::import_slice(bytes.as_slice()).expect("Failed to import bytes as glTF 2.0 data!");
     let mut result = Vec::new();
     let surface = unsafe { &mut crate::ROCK.as_mut().unwrap().surface };
@@ -66,11 +99,34 @@ pub fn meshes_from_bytes(bytes: Vec<u8>) -> Vec<(Mesh, Transform)> {
         let mut indices = Vec::new();
         for primitive in mesh.primitives() {
             let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
-            for pos in reader.read_positions().expect("No positional data found!") {
+            let pos_vec: Vec<[f32; 3]> = reader.read_positions().expect("No positional data found!").collect();
+            let rgb_vec: Option<Vec<[f32; 3]>> = match reader.read_colors(0) {
+                Some(data) => Some(data.into_rgb_f32().collect()),
+                None => None,
+            };
+            let uv_vec: Option<Vec<[f32; 2]>> = match reader.read_tex_coords(0) {
+                Some(data) => Some(data.into_f32().collect()),
+                None => None,
+            };
+            let normal_vec: Vec<[f32; 3]> = reader.read_normals().expect("No normal data found!").collect();
+            //TODO: Check array bounds
+            for i in 0..pos_vec.len() {
+                let pos = pos_vec[i];
+                let rgb = match rgb_vec {
+                    Some(ref val) => val[i],
+                    None => [1.0, 1.0, 1.0],
+                };
+                let uv = match uv_vec {
+                    Some(ref val) => val[i],
+                    None => [0.0, 0.0],
+                };
+                let normal = normal_vec[i];
                 vertices.push(
                     VertexType::new(
                         VertexPosition::new(pos),
-                        VertexColor::new([1.0, 1.0, 1.0])
+                        VertexColor::new(rgb),
+                        VertexUV::new(uv),
+                        VertexNormal::new(normal),
                     )
                 );
             }

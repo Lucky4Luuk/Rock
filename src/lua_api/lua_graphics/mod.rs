@@ -48,11 +48,13 @@ pub fn load_graphics_table(lua: &LuaApi) -> Result<()> {
     //     Ok(ret_val)
     // })?;
     // graphics_table.set("load_mesh_vertices", load_mesh_vert_func)?;
-    let load_mesh_func = lua.create_function(|lua,path: String| {
+    let load_mesh_func = lua.create_function(|lua,(path, format): (String, String)| {
+        use crate::graphics::MeshByteFormat;
+        let bformat = MeshByteFormat::from_string(format);
         // let vertices = crate::graphics::g2d::TRIANGLE;
         let mut bytes = Vec::new();
         unsafe { crate::ROCK.as_ref().unwrap().vfs.read_bytes(&path, &mut bytes).expect("Failed to load file!"); }
-        let mesh_vec = crate::graphics::meshes_from_bytes(bytes);
+        let mesh_vec = crate::graphics::meshes_from_bytes(bytes, bformat);
         let mut meshes = Vec::new();
         let mut transforms = Vec::new();
         for (mesh, transform) in mesh_vec {
@@ -103,6 +105,7 @@ fn draw(mesh: LuaMesh, transform: LuaTransform) {
                 //MVP
                 iface.set(&uni.projection, camera.get_proj().to_cols_array_2d());
                 iface.set(&uni.view, camera.get_view().to_cols_array_2d());
+                iface.set(&uni.normal_matrix, (camera.get_view() * transform.transform.get_matrix()).inverse().transpose().to_cols_array_2d());
 
                 rdr_gate.render(&RenderState::default(), |mut tess_gate| {
                     tess_gate.render(mesh.tess())
