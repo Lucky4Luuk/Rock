@@ -10,13 +10,13 @@ use super::VertexType;
 
 #[derive(Clone)]
 pub struct Mesh {
-    tess: Rc<Tess<GL33, VertexType>>
+    tess: Rc<Tess<GL33, VertexType, u32>>
 }
 
 impl Mesh {
     pub fn new<F>(surface: &mut luminance_sdl2::GL33Surface, func: F) -> Self
     where
-        F: Fn(TessBuilder<GL33, ()>) -> TessBuilder<GL33, VertexType>
+        F: Fn(TessBuilder<GL33, ()>) -> TessBuilder<GL33, VertexType, u32>
     {
         let builder = func(TessBuilder::<GL33, ()>::new(surface));
         let mesh = builder.build().expect("Failed to create mesh!"); //TODO: Error handling
@@ -26,7 +26,7 @@ impl Mesh {
         }
     }
 
-    pub fn tess(&self) -> &Tess<GL33, VertexType> {
+    pub fn tess(&self) -> &Tess<GL33, VertexType, u32> {
         &self.tess
     }
 }

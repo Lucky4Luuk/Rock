@@ -20,10 +20,13 @@ use glam::*;
 pub mod lua_api;
 pub mod graphics;
 pub mod math;
+pub mod vfs;
 
 use lua_api::LuaApi;
 use graphics::{ShaderProgram, Camera, CameraMode};
 use math::Transform;
+use vfs::VirtualFileSystem;
+use vfs::naive_vfs::NaiveVFS;
 
 static mut ROCK: Option<Rock> = None;
 
@@ -34,6 +37,7 @@ pub struct Rock {
     pub imgui: imgui::Context,
     pub imgui_sdl2: imgui_sdl2::ImguiSdl2,
     pub renderer: imgui_opengl_renderer::Renderer,
+    pub vfs: Box<dyn VirtualFileSystem>,
 
     //Runtime variables
     pub default_program: ShaderProgram,
@@ -64,6 +68,9 @@ impl Rock {
         let imgui_sdl2 = imgui_sdl2::ImguiSdl2::new(&mut imgui, &surface.window());
         let renderer = imgui_opengl_renderer::Renderer::new(&mut imgui, |s| video.gl_get_proc_address(s) as _);
 
+        //VFS initialization
+        let vfs = NaiveVFS::new();
+
         //Default shader program. 2nd program is because program doesn't implement `Clone`
         let program = graphics::get_default_program(&mut surface);
         let program2 = graphics::get_default_program(&mut surface);
@@ -82,6 +89,7 @@ impl Rock {
             imgui: imgui,
             imgui_sdl2: imgui_sdl2,
             renderer: renderer,
+            vfs: Box::new(vfs),
 
             default_program: program,
             cur_program: program2,

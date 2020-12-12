@@ -16,17 +16,24 @@ pub struct LuaMesh {
 }
 
 impl LuaMesh {
-    pub fn new_2d(vertices: &[VertexType]) -> Self {
+    pub fn new(vertices: &[VertexType]) -> Self {
         let mesh = unsafe { Mesh::new(&mut crate::ROCK.as_mut().unwrap().surface, |builder| {
             builder.set_vertices(vertices)
-                .set_mode(Mode::Triangle)
+                   .set_indices(Vec::<u32>::new())
+                   .set_mode(Mode::Triangle)
         }) };
         Self {
             mesh: mesh,
         }
     }
 
-    pub fn tess(&self) -> &Tess<GL33, VertexType> {
+    pub fn from_mesh(mesh: Mesh) -> Self {
+        Self {
+            mesh: mesh,
+        }
+    }
+
+    pub fn tess(&self) -> &Tess<GL33, VertexType, u32> {
         self.mesh.tess()
     }
 }
@@ -51,5 +58,5 @@ pub fn mesh_constructor(lua_verts: Table) -> Result<LuaMesh> {
         );
         vertices.push(vert);
     }
-    Ok(LuaMesh::new_2d(&vertices))
+    Ok(LuaMesh::new(&vertices))
 }

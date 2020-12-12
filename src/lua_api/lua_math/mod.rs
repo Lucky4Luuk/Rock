@@ -252,6 +252,14 @@ pub struct LuaTransform {
     pub transform: Arc<Transform>,
 }
 
+impl LuaTransform {
+    pub fn from_transform(transform: Transform) -> Self {
+        Self {
+            transform: Arc::new(transform)
+        }
+    }
+}
+
 impl UserData for LuaTransform {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_meta_function(MetaMethod::ToString, |_, obj: Self| {

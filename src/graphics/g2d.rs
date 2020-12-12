@@ -25,6 +25,7 @@ pub const TRIANGLE: [VertexType; 3] = [
 pub fn create_triangle(surface: &mut luminance_sdl2::GL33Surface) -> Mesh {
     Mesh::new(surface, |builder| {
         builder.set_vertices(&TRIANGLE[..])
+                .set_indices(Vec::<u32>::new())
                 .set_mode(Mode::Triangle)
     })
 }

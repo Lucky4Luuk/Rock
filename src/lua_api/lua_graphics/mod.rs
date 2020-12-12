@@ -23,28 +23,47 @@ pub fn load_graphics_table(lua: &LuaApi) -> Result<()> {
         mesh_constructor(vertices)
     })?;
     graphics_table.set("mesh", mesh_func)?;
-    let test_triangle_func = lua.create_function(|lua,()| {
-        let vertices = crate::graphics::g2d::TRIANGLE;
-        let ret_val = lua.create_table()?;
-        for i in 0..vertices.len() {
-            let pos = vertices[i].position;
-            let rgb = vertices[i].color;
-
-            let lua_pos = LuaVec3 {
-                vec: Arc::new(glam::Vec3::new(pos[0], pos[1], pos[2])),
-            };
-            let lua_rgb = LuaVec3 {
-                vec: Arc::new(glam::Vec3::new(rgb[0], rgb[1], rgb[2])),
-            };
-
-            let vert_table = lua.create_table()?;
-            vert_table.set(1, lua_pos)?;
-            vert_table.set(2, lua_rgb)?;
-            ret_val.set(i + 1, vert_table)?; //+1 because lua is 1 based
+    // let load_mesh_vert_func = lua.create_function(|lua,path: String| {
+    //     // let vertices = crate::graphics::g2d::TRIANGLE;
+    //     let mut bytes = Vec::new();
+    //     unsafe { crate::ROCK.as_ref().unwrap().vfs.read_bytes(&path, &mut bytes).expect("Failed to load file!"); }
+    //     let vertices = crate::graphics::mesh_from_bytes(bytes);
+    //     let ret_val = lua.create_table()?;
+    //     for i in 0..vertices.len() {
+    //         let pos = vertices[i].position;
+    //         let rgb = vertices[i].color;
+    //
+    //         let lua_pos = LuaVec3 {
+    //             vec: Arc::new(glam::Vec3::new(pos[0], pos[1], pos[2])),
+    //         };
+    //         let lua_rgb = LuaVec3 {
+    //             vec: Arc::new(glam::Vec3::new(rgb[0], rgb[1], rgb[2])),
+    //         };
+    //
+    //         let vert_table = lua.create_table()?;
+    //         vert_table.set(1, lua_pos)?;
+    //         vert_table.set(2, lua_rgb)?;
+    //         ret_val.set(i + 1, vert_table)?; //+1 because lua is 1 based
+    //     }
+    //     Ok(ret_val)
+    // })?;
+    // graphics_table.set("load_mesh_vertices", load_mesh_vert_func)?;
+    let load_mesh_func = lua.create_function(|lua,path: String| {
+        // let vertices = crate::graphics::g2d::TRIANGLE;
+        let mut bytes = Vec::new();
+        unsafe { crate::ROCK.as_ref().unwrap().vfs.read_bytes(&path, &mut bytes).expect("Failed to load file!"); }
+        let mesh_vec = crate::graphics::meshes_from_bytes(bytes);
+        let mut meshes = Vec::new();
+        let mut transforms = Vec::new();
+        for (mesh, transform) in mesh_vec {
+            let lua_mesh = LuaMesh::from_mesh(mesh);
+            let lua_transform = LuaTransform::from_transform(transform);
+            meshes.push(lua_mesh);
+            transforms.push(lua_transform)
         }
-        Ok(ret_val)
+        Ok((meshes, transforms))
     })?;
-    graphics_table.set("test_triangle", test_triangle_func)?;
+    graphics_table.set("load_mesh", load_mesh_func)?;
     let draw_func = lua.create_function(|_,(mesh, transform)| {
         draw(mesh, transform);
         Ok(())
