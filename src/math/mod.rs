@@ -21,6 +21,6 @@ impl Transform {
     }
 
     pub fn get_normal_matrix(&self) -> Mat4 {
-        Mat4::from_quat(self.rot).inverse().transpose()
+        self.get_matrix().inverse().transpose()
     }
 }

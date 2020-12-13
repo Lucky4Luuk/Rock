@@ -22,5 +22,5 @@ void main() {
 
     //Set position for rasterization
     gl_Position = projection * view * offset * vec4(position, 1.);
-    v_normal = mat3(normal_matrix) * normalize(normal);
+    v_normal = normalize(mat3(normal_matrix) * normalize(normal));
 }
