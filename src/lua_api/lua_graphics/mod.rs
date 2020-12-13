@@ -105,7 +105,8 @@ fn draw(mesh: LuaMesh, transform: LuaTransform) {
                 //MVP
                 iface.set(&uni.projection, camera.get_proj().to_cols_array_2d());
                 iface.set(&uni.view, camera.get_view().to_cols_array_2d());
-                iface.set(&uni.normal_matrix, (camera.get_view() * transform.transform.get_matrix()).inverse().transpose().to_cols_array_2d());
+                // iface.set(&uni.normal_matrix, (camera.get_view() * transform.transform.get_matrix()).inverse().transpose().to_cols_array_2d());
+                iface.set(&uni.normal_matrix, transform.transform.get_normal_matrix().to_cols_array_2d());
 
                 rdr_gate.render(&RenderState::default(), |mut tess_gate| {
                     tess_gate.render(mesh.tess())
