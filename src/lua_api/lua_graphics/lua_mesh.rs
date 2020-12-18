@@ -5,14 +5,14 @@ use mlua::{Chunk, Function, Table, Lua, prelude::ToLua, MetaMethod, Result, User
 
 use crate::graphics::Mesh;
 use crate::graphics::g2d::TRIANGLE;
-use crate::graphics::{VertexType, VertexPosition, VertexColor, VertexUV, VertexNormal};
-use crate::lua_api::lua_math::{LuaVec2, LuaVec3};
+use crate::graphics::{VertexType, VertexPosition, VertexColor, VertexUV, VertexNormal, VertexTangent};
+use crate::lua_api::lua_math::{LuaVec2, LuaVec3, LuaVec4};
 
 /// Wrapper around the many types of meshes, to provide a single
 /// interface for Lua.
 #[derive(Clone)]
 pub struct LuaMesh {
-    mesh: Mesh,
+    pub mesh: Mesh,
 }
 
 impl LuaMesh {
@@ -51,14 +51,16 @@ pub fn mesh_constructor(lua_verts: Table) -> Result<LuaMesh> {
     for i in 0..lua_verts.len()? {
         let lua_vert: Table = lua_verts.get(i + 1)?;
         let pos: LuaVec3 = lua_vert.get(1)?;
-        let rgb: LuaVec3 = lua_vert.get(3)?;
-        let uv: LuaVec2 = lua_vert.get(4)?;
+        let rgb: LuaVec3 = lua_vert.get(4)?;
+        let uv: LuaVec2 = lua_vert.get(5)?;
         let normal: LuaVec3 = lua_vert.get(2)?;
+        let tangent: LuaVec4 = lua_vert.get(3)?;
         let vert = VertexType::new(
             VertexPosition::new((*pos.vec).into()),
             VertexColor::new((*rgb.vec).into()),
             VertexUV::new((*uv.vec).into()),
             VertexNormal::new((*normal.vec).into()),
+            VertexTangent::new((*tangent.vec).into()),
         );
         vertices.push(vert);
     }

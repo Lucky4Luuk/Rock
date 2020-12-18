@@ -8,9 +8,7 @@ function rock.load()
     --it merely modifies the underlying pipeline state's clear colour
     -- rock.graphics.clear(1, 0, 0, 1)
 
-    -- local vertices = rock.graphics.load_mesh_vertices("lantern.glb")
-    -- mesh = rock.graphics.mesh(vertices)
-    local meshes, transforms = rock.graphics.load_mesh("lantern.glb", "glb")
+    local meshes, transforms = rock.graphics.load_mesh("sphere.glb", "glb")
     for i=1,#meshes do
         models[i] = {meshes[i], transforms[i]}
     end
@@ -18,9 +16,10 @@ end
 
 function rock.update(dt)
     t = t + dt
-    local tmp = rock.math.quat_euler(t,0,0)
+    local tmp = rock.math.quat_euler(3.14/4,0,0)
     for i=1,#models do
         models[i][2]:setRotation(tmp)
+        -- models[i][2]:setScale(rock.math.vec3(0.075, 0.075, 0.075))
     end
 end
 

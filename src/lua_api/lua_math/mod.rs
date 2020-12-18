@@ -197,6 +197,91 @@ pub fn vec3_constructor(x: f32, y: f32, z: f32) -> LuaVec3 {
 }
 
 #[derive(Clone)]
+pub struct LuaVec4 {
+    pub vec: Arc<Vec4>,
+}
+
+impl UserData for LuaVec4 {
+    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_meta_function(MetaMethod::ToString, |_, obj: Self| {
+            Ok(format!("Vector {{ vec: {} }}", obj.vec))
+        });
+
+        // Comparisons
+        methods.add_meta_function(MetaMethod::Eq, |_, (a,b): (LuaVec4, LuaVec4)| {
+            Ok(*a.vec == *b.vec)
+        });
+
+        methods.add_meta_function(MetaMethod::Lt, |_, (a,b): (LuaVec4, LuaVec4)| {
+            Ok(*a.vec < *b.vec)
+        });
+
+        methods.add_meta_function(MetaMethod::Le, |_, (a,b): (LuaVec4, LuaVec4)| {
+            Ok(*a.vec <= *b.vec)
+        });
+
+        // Math functions
+        methods.add_meta_function(MetaMethod::Add, |_, (a,b): (LuaVec4, LuaVec4)| {
+            Ok(LuaVec4 { vec: Arc::new(*a.vec + *b.vec) })
+        });
+
+        methods.add_meta_function(MetaMethod::Sub, |_, (a,b): (LuaVec4, LuaVec4)| {
+            Ok(LuaVec4 { vec: Arc::new(*a.vec - *b.vec) })
+        });
+
+        methods.add_meta_function(MetaMethod::Mul, |_, (a,b): (LuaVec4, LuaVec4)| {
+            Ok(LuaVec4 { vec: Arc::new(*a.vec * *b.vec) })
+        });
+
+        methods.add_meta_function(MetaMethod::Div, |_, (a,b): (LuaVec4, LuaVec4)| {
+            Ok(LuaVec4 { vec: Arc::new(*a.vec / *b.vec) })
+        });
+
+        methods.add_meta_function(MetaMethod::Pow, |_, (a,b): (LuaVec4, f32)| {
+            Ok(LuaVec4 { vec: Arc::new(a.vec.powf(b)) })
+        });
+
+        methods.add_meta_function(MetaMethod::Unm, |_, a: LuaVec4| {
+            Ok(LuaVec4 { vec: Arc::new(-*a.vec) })
+        });
+
+        // Data related functions
+        methods.add_method("getX", |_, obj, ()| {
+            Ok(obj.vec.x)
+        });
+
+        methods.add_method("getY", |_, obj, ()| {
+            Ok(obj.vec.y)
+        });
+
+        methods.add_method("getZ", |_, obj, ()| {
+            Ok(obj.vec.z)
+        });
+
+        methods.add_method_mut("setX", |_, obj, x: f32| {
+            Arc::make_mut(&mut obj.vec).x = x;
+            Ok(())
+        });
+
+        methods.add_method_mut("setY", |_, obj, y: f32| {
+            Arc::make_mut(&mut obj.vec).y = y;
+            Ok(())
+        });
+
+        methods.add_method_mut("setZ", |_, obj, z: f32| {
+            Arc::make_mut(&mut obj.vec).z = z;
+            Ok(())
+        });
+    }
+}
+
+pub fn vec4_constructor(x: f32, y: f32, z: f32, w: f32) -> LuaVec4 {
+    LuaVec4 {
+        vec: Arc::new(Vec4::new(x,y,z,w))
+    }
+}
+
+#[derive(Clone)]
 pub struct LuaQuat {
     pub quat: Arc<Quat>,
 }

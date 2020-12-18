@@ -28,6 +28,8 @@ pub enum VertexSemantics {
     UV,
     #[sem(name = "normal", repr = "[f32; 3]", wrapper = "VertexNormal")]
     Normal,
+    #[sem(name = "tangent", repr = "[f32; 4]", wrapper = "VertexTangent")]
+    Tangent,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Vertex)]
@@ -37,6 +39,7 @@ pub struct VertexType {
     pub color: VertexColor,
     pub uv: VertexUV,
     pub normal: VertexNormal,
+    pub tangent: VertexTangent,
 }
 
 #[derive(Debug, UniformInterface)]
@@ -49,6 +52,8 @@ pub struct ShaderInterface {
     pub view: Uniform<[[f32; 4]; 4]>,
     #[uniform(unbound)]
     pub normal_matrix: Uniform<[[f32; 4]; 4]>,
+    #[uniform(unbound)]
+    pub cam_pos: Uniform<[f32; 3]>,
 }
 
 const VS_STR: &str = include_str!("vs2d.glsl");
@@ -109,6 +114,7 @@ fn gltf_meshes_from_bytes(bytes: Vec<u8>) -> Vec<(Mesh, Transform)> {
                 None => None,
             };
             let normal_vec: Vec<[f32; 3]> = reader.read_normals().expect("No normal data found!").collect();
+            let tangent_vec: Vec<[f32; 4]> = reader.read_tangents().expect("No tangent data found!").collect();
             //TODO: Check array bounds
             for i in 0..pos_vec.len() {
                 let pos = pos_vec[i];
@@ -121,12 +127,14 @@ fn gltf_meshes_from_bytes(bytes: Vec<u8>) -> Vec<(Mesh, Transform)> {
                     None => [0.0, 0.0],
                 };
                 let normal = normal_vec[i];
+                let tangent = tangent_vec[i];
                 vertices.push(
                     VertexType::new(
                         VertexPosition::new(pos),
                         VertexColor::new(rgb),
                         VertexUV::new(uv),
                         VertexNormal::new(normal),
+                        VertexTangent::new(tangent),
                     )
                 );
             }
@@ -141,7 +149,7 @@ fn gltf_meshes_from_bytes(bytes: Vec<u8>) -> Vec<(Mesh, Transform)> {
         });
         let pos = Vec3::new(0.0, 0.0, 0.0);
         let rot = Quat::identity();
-        let scale = Vec3::new(0.075, 0.075, 0.075);
+        let scale = Vec3::new(1.0, 1.0, 1.0); //0.075, 0.075, 0.075
         let transform = Transform::new(pos, rot, scale);
         result.push((mesh, transform));
     }

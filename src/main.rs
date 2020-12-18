@@ -43,6 +43,10 @@ pub struct Rock {
     pub default_program: ShaderProgram,
     pub cur_program: ShaderProgram,
     pub camera: Camera,
+
+    //Performance variables
+    pub tri_count: usize, //Triangles rendered per frame
+    pub draw_calls: usize, //Drawcalls per frame
 }
 
 impl Rock {
@@ -94,6 +98,9 @@ impl Rock {
             default_program: program,
             cur_program: program2,
             camera: camera,
+
+            tri_count: 0,
+            draw_calls: 0,
         }
     }
 
@@ -146,26 +153,6 @@ fn main() {
         //Call game update
         unsafe { lua_api::call_rock_func(&ROCK.as_ref().unwrap().lua, "update", deltatime).expect("Failed to call `rock.update`"); }
 
-        //Prepare IMGUI
-        unsafe { ROCK.as_mut().unwrap().imgui_sdl2.prepare_frame(ROCK.as_mut().unwrap().imgui.io_mut(), &ROCK.as_mut().unwrap().surface.window(), &event_pump.mouse_state()); }
-        let ui = unsafe { ROCK.as_mut().unwrap().imgui.frame() };
-        let perf_window = imgui::Window::new(im_str!("Performance"))
-                    .position([5.0, 5.0], imgui::Condition::Appearing)
-                    .size([180.0, 80.0], imgui::Condition::Appearing)
-                    .resizable(true)
-                    .title_bar(true);
-        perf_window.build(&ui, || {
-            ui.text(im_str!("FPS: {:.2} ({:.1}ms)", 1.0 / deltatime, deltatime * 1000.0));
-        });
-        let debug_window = imgui::Window::new(im_str!("Debug"))
-                    .position([5.0, 90.0], imgui::Condition::Appearing)
-                    .size([180.0, 80.0], imgui::Condition::Appearing)
-                    .resizable(true)
-                    .title_bar(true);
-        debug_window.build(&ui, || {
-            ui.text("Nothing here yet :)");
-        });
-
         //Get back buffer
         let back_buffer = unsafe { ROCK.as_mut().unwrap().surface.back_buffer().expect("Failed to get backbuffer!") };
 
@@ -182,7 +169,37 @@ fn main() {
         }
 
         //Call game draw
-        unsafe { lua_api::call_rock_func(&ROCK.as_ref().unwrap().lua, "draw", 0).expect("Failed to call `rock.draw`"); }
+        unsafe {
+            {
+                let r = ROCK.as_mut().unwrap();
+                r.tri_count = 0;
+                r.draw_calls = 0;
+            }
+            lua_api::call_rock_func(&ROCK.as_ref().unwrap().lua, "draw", 0).expect("Failed to call `rock.draw`");
+        }
+
+        //IMGUI UI
+        unsafe { ROCK.as_mut().unwrap().imgui_sdl2.prepare_frame(ROCK.as_mut().unwrap().imgui.io_mut(), &ROCK.as_mut().unwrap().surface.window(), &event_pump.mouse_state()); }
+        let ui = unsafe { ROCK.as_mut().unwrap().imgui.frame() };
+        let perf_window = imgui::Window::new(im_str!("Performance"))
+                    .position([5.0, 5.0], imgui::Condition::Appearing)
+                    .size([180.0, 90.0], imgui::Condition::Appearing)
+                    .resizable(true)
+                    .title_bar(true);
+        perf_window.build(&ui, || {
+            ui.text(im_str!("FPS: {:.2} ({:.1}ms)", 1.0 / deltatime, deltatime * 1000.0));
+            ui.separator();
+            ui.text(im_str!("Tris: {}", ROCK.as_ref().unwrap().tri_count));
+            ui.text(im_str!("Drawcalls: {}", ROCK.as_ref().unwrap().draw_calls));
+        });
+        let debug_window = imgui::Window::new(im_str!("Debug"))
+                    .position([5.0, 100.0], imgui::Condition::Appearing)
+                    .size([180.0, 80.0], imgui::Condition::Appearing)
+                    .resizable(true)
+                    .title_bar(true);
+        debug_window.build(&ui, || {
+            ui.text("Nothing here yet :)");
+        });
 
         //Render IMGUI
         unsafe {

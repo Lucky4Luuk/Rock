@@ -29,4 +29,12 @@ impl Mesh {
     pub fn tess(&self) -> &Tess<GL33, VertexType, u32> {
         &self.tess
     }
+
+    pub fn vert_count(&self) -> usize {
+        self.tess.vert_nb()
+    }
+
+    pub fn tri_count(&self) -> usize {
+        self.tess.vert_nb() / 3
+    }
 }

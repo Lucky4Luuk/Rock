@@ -6,6 +6,7 @@ use super::{
     VertexColor,
     VertexUV,
     VertexNormal,
+    VertexTangent,
 
     mesh::Mesh,
 };
@@ -16,18 +17,21 @@ pub const TRIANGLE: [VertexType; 3] = [
         VertexColor::new([1.0, 0.0, 0.0]),
         VertexUV::new([0.0, 0.0]),
         VertexNormal::new([0.0, 0.0, -1.0]),
+        VertexTangent::new([1.0, 0.0, 0.0, 1.0]),
     ),
     VertexType::new(
         VertexPosition::new([1.0, -1.0, 0.0]),
         VertexColor::new([0.0, 1.0, 0.0]),
         VertexUV::new([1.0, 0.0]),
         VertexNormal::new([0.0, 0.0, -1.0]),
+        VertexTangent::new([1.0, 0.0, 0.0, 1.0]),
     ),
     VertexType::new(
         VertexPosition::new([0.0, 1.0, 0.0]),
         VertexColor::new([0.0, 0.0, 1.0]),
         VertexUV::new([0.0, 1.0]),
         VertexNormal::new([0.0, 0.0, -1.0]),
+        VertexTangent::new([1.0, 0.0, 0.0, 1.0]),
     ),
 ];
 

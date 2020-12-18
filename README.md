@@ -9,3 +9,5 @@ A Lua game-engine coded in Rust, heavily inspired by Love2D!
 ## In progress
 - [ ] Camera support (enables 3D)
 - [ ] Custom mesh support (also loading from different filetypes)
+- [ ] Material struct + Lua API for materials
+- [ ] Textures (requires materials to be implemented first)

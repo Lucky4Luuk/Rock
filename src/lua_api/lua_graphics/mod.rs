@@ -23,32 +23,7 @@ pub fn load_graphics_table(lua: &LuaApi) -> Result<()> {
         mesh_constructor(vertices)
     })?;
     graphics_table.set("mesh", mesh_func)?;
-    // let load_mesh_vert_func = lua.create_function(|lua,path: String| {
-    //     // let vertices = crate::graphics::g2d::TRIANGLE;
-    //     let mut bytes = Vec::new();
-    //     unsafe { crate::ROCK.as_ref().unwrap().vfs.read_bytes(&path, &mut bytes).expect("Failed to load file!"); }
-    //     let vertices = crate::graphics::mesh_from_bytes(bytes);
-    //     let ret_val = lua.create_table()?;
-    //     for i in 0..vertices.len() {
-    //         let pos = vertices[i].position;
-    //         let rgb = vertices[i].color;
-    //
-    //         let lua_pos = LuaVec3 {
-    //             vec: Arc::new(glam::Vec3::new(pos[0], pos[1], pos[2])),
-    //         };
-    //         let lua_rgb = LuaVec3 {
-    //             vec: Arc::new(glam::Vec3::new(rgb[0], rgb[1], rgb[2])),
-    //         };
-    //
-    //         let vert_table = lua.create_table()?;
-    //         vert_table.set(1, lua_pos)?;
-    //         vert_table.set(2, lua_rgb)?;
-    //         ret_val.set(i + 1, vert_table)?; //+1 because lua is 1 based
-    //     }
-    //     Ok(ret_val)
-    // })?;
-    // graphics_table.set("load_mesh_vertices", load_mesh_vert_func)?;
-    let load_mesh_func = lua.create_function(|lua,(path, format): (String, String)| {
+    let load_mesh_func = lua.create_function(|_,(path, format): (String, String)| {
         use crate::graphics::MeshByteFormat;
         let bformat = MeshByteFormat::from_string(format);
         // let vertices = crate::graphics::g2d::TRIANGLE;
@@ -105,8 +80,8 @@ fn draw(mesh: LuaMesh, transform: LuaTransform) {
                 //MVP
                 iface.set(&uni.projection, camera.get_proj().to_cols_array_2d());
                 iface.set(&uni.view, camera.get_view().to_cols_array_2d());
-                // iface.set(&uni.normal_matrix, (camera.get_view() * transform.transform.get_matrix()).inverse().transpose().to_cols_array_2d());
                 iface.set(&uni.normal_matrix, transform.transform.get_normal_matrix().to_cols_array_2d());
+                iface.set(&uni.cam_pos, camera.transform.pos.into());
 
                 rdr_gate.render(&RenderState::default(), |mut tess_gate| {
                     tess_gate.render(mesh.tess())
@@ -117,5 +92,12 @@ fn draw(mesh: LuaMesh, transform: LuaTransform) {
 
     if !render.is_ok() {
         panic!("Renderer ran into unknown error!");
+    }
+
+    unsafe {
+        // println!("{}", mesh.mesh.tri_count());
+        let r = ROCK.as_mut().unwrap();
+        r.tri_count += mesh.mesh.tri_count();
+        r.draw_calls += 1;
     }
 }

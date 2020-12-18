@@ -1,19 +1,4 @@
-// #extension GL_ARB_shading_language_include : require
-// #include brdf_cook_torrance
-
-uniform vec3 cam_pos;
-
-//Input from previous stage
-in vec3 v_color;
-in vec2 v_uv;
-in vec3 v_normal;
-in vec3 v_wpos;
-in vec4 v_tangent;
-
-//Output for current stage
-out vec3 frag_color;
-
-#define PI 3.14159265359
+//Broken
 
 struct Material {
     vec3 albedo;
@@ -21,16 +6,9 @@ struct Material {
     float subsurf;
     float spec; //TODO: Replace with IOR
     float roughness;
-    float anisotropic;
     float sheen;
     float clearcoat;
     float clearcoatGloss;
-};
-
-struct Light {
-    vec3 color;
-    vec3 wpos;
-    float power;
 };
 
 float SchlickFresnel(float u)
@@ -133,41 +111,4 @@ vec3 BRDF(Light light, vec3 F0, vec3 N, vec3 V, vec3 X, vec3 Y, Material mat) {
         * (1.0 - mat.metallic)
         + Gs*Fs*Ds + 0.25*mat.clearcoat*Gr*Fr*Dr;
     return result * max(NdotL, 0.0);
-}
-
-vec3 ReinhardTonemap(vec3 col) {
-    col = col / (col + vec3(1.0));
-    return pow(col, vec3(1.0/2.2));
-}
-
-void main() {
-    vec3 v_binormal = cross(v_normal, v_tangent.xyz) * v_tangent.w;
-
-    Material mat;
-    mat.albedo = vec3(1.0, 0.0, 0.0);
-    mat.metallic = 0.0;
-    mat.subsurf = 0.0;
-    mat.spec = 0.5;
-    mat.roughness = 0.8;
-    mat.anisotropic = 0.0;
-    mat.sheen = 0.0;
-    mat.clearcoat = 0.0;
-    mat.clearcoatGloss = 1.0;
-
-    Light light;
-    light.wpos = vec3(0.0); //Not important right now
-    light.color = vec3(1.0);
-    light.power = 3.0;
-
-    vec3 F0 = vec3(0.04);
-    F0 = mix(F0, mat.albedo, mat.metallic);
-
-    vec3 N = normalize(v_normal);
-    vec3 V = normalize(cam_pos - v_wpos);
-
-    vec3 col = vec3(0.0);
-    col += BRDF(light, F0, N, -V, v_tangent.xyz, v_binormal, mat);
-
-    frag_color = ReinhardTonemap(col);
-    // frag_color = col;
 }
