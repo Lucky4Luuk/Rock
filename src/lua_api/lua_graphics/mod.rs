@@ -4,6 +4,7 @@ use luminance::context::GraphicsContext as _;
 use mlua::{Chunk, Function, Table, Lua, prelude::ToLua, MetaMethod, Result, UserData, UserDataMethods, Variadic};
 
 pub mod lua_mesh;
+pub mod lua_material;
 
 use super::LuaApi;
 
